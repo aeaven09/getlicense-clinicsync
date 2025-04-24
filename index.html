@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ClinicSync License Generator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="clinicicon.png">
+
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .card {
+      width: 450px;
+      height: 450px;
+      margin: 50px auto;
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+ 
+    .icon-circle i {
+      font-size: 30px;
+      color: #0D90E3;
+    }
+    .form-control::placeholder {
+      color: #aaa;
+    }
+    .btn-custom {
+      background-color: #0D90E3;
+      color: white;
+      width: 100%;
+      height: 40px;
+    }
+    .btn-custom:hover {
+        color: white;
+        background-color: #5c676b;
+    }
+  </style>
+</head>
+<body class="d-flex justify-content-center align-items-center vh-100 bg-light">
+
+<div class="card p-4 text-center">
+    <img src="clinicicon.png" alt="Clinic Icon" style="width: 65px; height: 65px; margin: 10px auto;" class="d-block">
+
+  <h4 class="fw-bold">ClinicSync License</h4>
+  <p class="text-muted mb-4">Register your hospital to generate credentials.</p>
+
+  <form id="registrationForm" novalidate>
+    <div class="mb-3 text-start">
+      <label for="hospitalName" class="form-label">Hospital Name</label>
+      <div class="input-group has-validation">
+        <span class="input-group-text"><i class="bi bi-buildings"></i></span>
+        <input type="text" class="form-control" id="getHospitalName" placeholder="Enter hospital name" required>
+      </div>
+    </div>
+    <div class="mb-4 text-start">
+      <label for="email" class="form-label">Email Address</label>
+      <div class="input-group has-validation">
+        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+        <input type="email" class="form-control" id="getHospitalEmail" placeholder="Enter contact email" required>
+      </div>
+    </div>
+    <button id="generateCredentials"  type="submit" class="btn btn-custom mt-2 mb-2">Generate Credentials</button>
+  </form>
+  
+</div>
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, addDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+  
+    const firebaseConfig = {
+      apiKey: "AIzaSyBKpNDa6LouxazPitQBjUbaLVOBVQXLNfI",
+      authDomain: "final-clinicsync.firebaseapp.com",
+      projectId: "final-clinicsync",
+      storageBucket: "final-clinicsync.firebasestorage.app",
+      messagingSenderId: "660704265614",
+      appId: "1:660704265614:web:376cc9230228d15c7490df",
+      measurementId: "G-FR6QEED4QE"
+    };
+  
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+  
+    document.getElementById('registrationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const hospitalNameInput = document.getElementById('getHospitalName');
+    const hospitalEmailInput = document.getElementById('getHospitalEmail');
+    const hospitalName = hospitalNameInput.value.trim();
+    const hospitalEmail = hospitalEmailInput.value.trim();
+
+    // Validate inputs before generating credentials
+    let valid = true;
+    hospitalNameInput.classList.remove('is-invalid');
+    hospitalEmailInput.classList.remove('is-invalid');
+
+    if (!hospitalName) {
+        hospitalNameInput.classList.add('is-invalid');
+        valid = false;
+    }
+
+    if (!hospitalEmail) {
+        hospitalEmailInput.classList.add('is-invalid');
+        valid = false;
+    }
+
+    if (valid) {
+        const licenseKey = generateLicenseKey();
+        const username = generateUsername(hospitalName); 
+        const password = generateRandomPassword();
+
+        // Log to confirm values before storing
+        console.log("License Key:", licenseKey);
+        console.log("Username:", username);
+        console.log("Password:", password);
+
+        // Store the values in localStorage
+        localStorage.setItem('licenseKey', licenseKey);
+        localStorage.setItem('username', username);
+        localStorage.setItem('password', password);
+
+   
+
+    try {
+      await addDoc(collection(db, "hospitals"), {
+        hospitalName,
+        hospitalEmail,
+        licenseKey,
+        username,
+        password,
+        isActivated: false
+      });
+
+    alert('You want to proceed for the license key?');
+
+    // Wait a bit before redirect to ensure data is saved
+    setTimeout(function() {
+        window.location.href = 'loading.html';  // Redirect to private.html after saving the data
+      }, 1000);  // 1 second delay
+    } catch (error) {
+      console.error("Error adding document: ", error);
+    }
+  }
+});
+
+
+    function generateLicenseKey() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+        const getRandomBlock = () => {
+        let block = '';
+        for (let i = 0; i < 5; i++) {
+            block += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return block;
+        };
+
+        return `CS-${getRandomBlock()}-${getRandomBlock()}-${getRandomBlock()}`;
+
+        //sends the data to private.html
+    }
+
+    function generateUsername(hospitalName) {
+        // Remove spaces, special characters, and convert to lowercase
+        const cleanedName = hospitalName.replace(/\s+/g, '').toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+
+        // Generate a random 4-digit number
+        const randomNumber = Math.floor(1000 + Math.random() * 9000);  // Generates a random number between 1000 and 9999
+
+        // List of special symbols
+        const specialSymbols = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '-', '=', '+', '[', ']', '{', '}', '|', '\\', ';', ':', '"', '\'', '<', '>', ',', '.', '?', '/'];
+
+        // Select a random special symbol from the array
+        const randomSymbol = specialSymbols[Math.floor(Math.random() * specialSymbols.length)];
+
+        // Combine the cleaned name, random number, and special symbol
+        const username = `${cleanedName}${randomNumber}${randomSymbol}`;
+
+        return username;
+    }
+
+    function generateRandomPassword() {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_-+=[]{}|;:,.<>?';
+  
+        let password = '';
+  
+        // Generate an 8-character password
+        for (let i = 0; i < 8; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length);
+            password += characters.charAt(randomIndex);
+    }
+
+    return password;
+    }
+
+
+  </script>
+  
+  
+</html>
